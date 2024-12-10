@@ -1,0 +1,76 @@
+import threading
+import random
+import time
+from queue import Queue
+
+class Table:
+    def __init__(self,number,guest=None):
+        self.number=number
+        self.guest=guest
+
+class Guest(threading.Thread):
+    def __init__(self,name):
+        super().__init__()
+        self.name=name
+
+    def run(self):
+        time.sleep(random.randint(3, 10))
+
+class Cafe:
+    def __init__(self, *tables, q=Queue()):
+        self.tables=tables
+        self.q=q
+
+    def guest_arrival(self, *guests):
+        for g in guests:
+            a=0
+            for t in self.tables:
+                if t.guest==None:
+                    t.guest=g.name
+                    thr = Guest(g)
+                    thr.start()
+                    print(f'{g.name} сел(-а) за стол номер {t.number}')
+                    break
+                else:
+                    a+=1
+            if a>=len(self.tables):
+                self.q.put(g)
+                print(f'{g.name} в очереди')
+
+    def discuss_guests(self):
+        while True:
+            a=0
+            for t in self.tables:
+                if t.guest!=None:
+                    if Guest(t.guest).is_alive()==False:
+                        print(f'{t.guest} покушал(-а) и ушёл(ушла)')
+                        print(f'Стол номер {t.number} свободен')
+                        t.guest=None
+                        if self.q.empty() != True:
+                            item=self.q.get()
+                            t.guest=item.name
+                            print(f'{t.guest} вышел(-ла) из очереди и сел(-а) за стол номер {t.number}')
+                            item.start()
+                else:
+                    a+=1
+            if a >= len(self.tables):
+                break
+
+
+# Создание столов
+tables = [Table(number) for number in range(1, 6)]
+# Имена гостей
+guests_names = [
+'Maria', 'Oleg', 'Vakhtang', 'Sergey', 'Darya', 'Arman',
+'Vitoria', 'Nikita', 'Galina', 'Pavel', 'Ilya', 'Alexandra'
+]
+# Создание гостей
+guests = [Guest(name) for name in guests_names]
+# Заполнение кафе столами
+cafe = Cafe(*tables)
+# Приём гостей
+cafe.guest_arrival(*guests)
+# Обслуживание гостей
+cafe.discuss_guests()
+
+
